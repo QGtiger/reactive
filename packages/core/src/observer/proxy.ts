@@ -24,14 +24,14 @@ export function handleProxyData<T>(
     set(target, key, val) {
       const oldVal = Reflect.get(target, key);
       const isSetSuc = Reflect.set(target, key, handleProxyData(val, getter, setter));
+      // 数组方法修改的话，是先修改 key 比如 push, 是先 设置push item 索引（这个时候length 已经被修改了）。 然后再去设置 length。
       if (setter) {
-        // 这里调整了下 针对数组的修改，这里就简单这样吧，length 修改了，就盘点过，数组改变了
-        if (oldVal !== val) {
+        // 数组的话。修改 length就直接触发好了。 而且，一些遍历方法，基本都用到length 作为边界判断，所以，触发更新问题不大
+        if (Array.isArray(target) && key === 'length') {
+          setter(target, key, val, oldVal);
+        } else if (oldVal !== val) {
           setter(target, key, val, oldVal);
         }
-        // else if (key === 'length') {
-        //   setter(target, key, val, oldVal);
-        // }
       }
       return isSetSuc;
     },
