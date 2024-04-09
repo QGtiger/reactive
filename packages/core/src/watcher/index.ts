@@ -1,22 +1,27 @@
 import { depend, popTarget, pushTarget } from "../observer"
+import { queueEffectFn } from "../queueTickFn"
 
-const defaultOptions = {
-  lazy: false
+interface EffectWatcherOptions {
+  lazy?: boolean,
+  sync?: boolean
 }
 
-export class Watcher<T = any> {
+const defaultOptions: EffectWatcherOptions = {
+  lazy: false,
+  sync: false
+}
+
+export class EffectWatcher<T = any> {
   private value!: T
   private dirty: boolean = true
   // 当前watch， 依赖于 哪些属性。 用于清除依赖
-  private depSet: Set<Set<Watcher>> = new Set()
+  private depSet: Set<Set<EffectWatcher>> = new Set()
 
   getOptions() {
     return this.options || defaultOptions
   }
 
-  constructor(public getter: () => T, public options?: {
-    lazy: boolean
-  }) {
+  constructor(public getter: () => T, public options?: EffectWatcherOptions) {
     const {lazy} = this.getOptions()
     if (lazy) {
       // 惰性属性
@@ -29,11 +34,14 @@ export class Watcher<T = any> {
    * 执行副作用
    */
   run () {
-    const {lazy} = this.getOptions()
+    const {lazy, sync} = this.getOptions()
     this.dirty = true
     if (!lazy) {
-      // queue watcher 微任务 TODO
-      this.getterWithTrack()
+      if (sync) {
+        this.getterWithTrack()
+      } else {
+        queueEffectFn(this.getterWithTrack, this)
+      }
     }
   }
 
