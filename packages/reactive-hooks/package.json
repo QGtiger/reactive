@@ -1,14 +1,8 @@
 {
-  "name": "@lightfish/reactive",
+  "name": "@lightfish/reactive-hooks",
   "version": "1.0.0",
   "description": "",
-  "exports": {
-    ".": {
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
-    }
-  },
-  "types": "./dist/index.d.ts",
+  "main": "index.js",
   "scripts": {
     "build": "tsup"
   },
@@ -16,10 +10,12 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@types/react": "^18.2.75",
+    "react": "^18.2.0",
     "tsup": "^8.0.2",
     "typescript": "^5.4.3"
   },
   "dependencies": {
-    "@lightfish/reactive-core": "workspace:^"
+    "@lightfish/reactive": "workspace:^"
   }
 }
