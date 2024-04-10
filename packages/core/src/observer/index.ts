@@ -1,17 +1,17 @@
 import { handleProxyData } from "./proxy"
 
-type DepTargetType = {
-  addDep: (s: Set<DepTargetType>) => void // 将回调Set 也放到 watcher 里面，这样watcher内可以直接清楚依赖
-  run: () => void // 依赖修改后 watcher 执行
+type WatcherType = {
+  addDep: (s: Set<WatcherType>) => void // 将回调Set 也放到 watcher 里面，这样watcher内可以直接清楚依赖
+  update: () => void // 依赖修改后 watcher 执行
 }
 
 class Dep {
-  static target?: DepTargetType
+  static target?: WatcherType
 }
 
-const stackDepTargets: DepTargetType[] = []
+const stackDepTargets: WatcherType[] = []
 
-export function pushTarget(t: DepTargetType) {
+export function pushTarget(t: WatcherType) {
   stackDepTargets.push(t)
   return Dep.target = t
 }
@@ -26,7 +26,7 @@ export function popTarget() {
  * @param effectSet 副作用集合 Set
  * @returns 
  */
-export function depend(effectSet: Set<DepTargetType>) {
+export function depend(effectSet: Set<WatcherType>) {
   const _w = Dep.target
   if (!_w) return
 
@@ -40,7 +40,7 @@ export function depend(effectSet: Set<DepTargetType>) {
  * 这里是使用 Set做存储，保持唯一性
  * 为啥是kv 结构呢。 因为 setter 执行的时候就是给出 target（响应数据） 和 key（具体修改的属性key）
  */
-const depWeakMap = new WeakMap<any, Map<string, Set<DepTargetType>>>()
+const depWeakMap = new WeakMap<any, Map<string, Set<WatcherType>>>()
 
 /**
  * 触发 被依赖watcher 的执行 run
@@ -57,7 +57,7 @@ function trigger(target: any, key: string) {
   const cbs = Array.from(tkSet)
   cbs.forEach(w => {
     // 执行回调
-    w.run()
+    w.update()
   })
 }
 
@@ -78,11 +78,22 @@ function track(target: any, key: string) {
   depend(tkSet)
 }
 
+export type ObserverConfig = {
+  onTrigger?: (target: any, key: any, value: any, oldValue: any) => void,
+  onTrack?: (target: any, key: any) => void
+}
+
 /**
  * 响应式数据
  * @param data 源数据
  * @returns 
  */
-export function observer<T>(data: T): T {
-  return handleProxyData(data, track, trigger)
+export function observer<T>(data: T, config?: ObserverConfig): T {
+  return handleProxyData(data, (t, k) => {
+    config?.onTrack?.(t, k)
+    track(t, k)
+  }, (t, k, v, ov) => {
+    config?.onTrigger?.(t, k, v, ov)
+    trigger(t, k)
+  })
 }

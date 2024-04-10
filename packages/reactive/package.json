@@ -10,7 +10,8 @@
   },
   "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "tsup"
+    "build": "tsup",
+    "test11": "npx ts-node ./src/test.ts"
   },
   "keywords": [],
   "author": "",

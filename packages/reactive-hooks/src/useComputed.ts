@@ -1,14 +1,16 @@
-import { useRef, useState } from "react"
-import { useWatchEffect } from "./useWatchEffect"
+import { useEffect, useMemo } from "react"
+import { computed } from "@lightfish/reactive"
 
 export function useComputed<T>(getter: () => T) {
-  const [value, setValue] = useState<T>()
-  const latestGetter = useRef(getter)
-  latestGetter.current = getter
+  const _computedRef = useMemo(() => {
+    return computed(getter)
+  }, [])
 
-  useWatchEffect(() => {
-    setValue(latestGetter.current?.())
-  })
+  useEffect(() => {
+    return () => {
+      _computedRef.cleanUp()
+    }
+  }, [])
 
-  return value
+  return _computedRef
 }

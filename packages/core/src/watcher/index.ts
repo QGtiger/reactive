@@ -1,5 +1,5 @@
 import { depend, popTarget, pushTarget } from "../observer"
-import { queueEffectFn } from "../queueTickFn"
+import { queueWatcher } from "../queueWatcher"
 
 interface EffectWatcherOptions {
   lazy?: boolean,
@@ -33,16 +33,21 @@ export class EffectWatcher<T = any> {
   /**
    * 执行副作用
    */
-  run () {
+  update () {
     const {lazy, sync} = this.getOptions()
     this.dirty = true
     if (!lazy) {
       if (sync) {
         this.getterWithTrack()
       } else {
-        queueEffectFn(this.getterWithTrack, this)
+        // 原型方法，多个的时候，只会执行一次
+        queueWatcher(this)
       }
     }
+  }
+
+  run() {
+    this.getterWithTrack()
   }
 
   /**

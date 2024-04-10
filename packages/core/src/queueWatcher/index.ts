@@ -52,22 +52,20 @@ export const nextTick = (function () {
   };
 })();
 
-type EffectFnc = (...args: any[]) => any;
+type Watcher = {
+  run: () => void // 依赖修改后 watcher 执行
+}
 
-export const queueEffectFn = (function () {
-  const fnSet = new Set<NoopType>();
-  const queue: {
-    func: EffectFnc;
-    context: any;
-    args: any[];
-  }[] = [];
+export const queueWatcher = (function () {
+  const watcherSet = new Set<Watcher>();
+  const queue: Watcher[] = [];
   let flushing = false; // 是否在刷新
   let waiting = false;
 
   let index = 0; // 执行索引
 
   function resetSchedulerState() {
-    fnSet.clear();
+    watcherSet.clear();
     index = queue.length = 0;
     waiting = flushing = false;
   }
@@ -75,32 +73,26 @@ export const queueEffectFn = (function () {
   function flushSchedulerQueue() {
     flushing = true;
     for (index = 0; index < queue.length; index++) {
-      const { func, context, args } = queue[index];
+      const _watcher = queue[index];
       // clear 一下
-      fnSet.delete(func);
-      func.apply(context, args);
+      watcherSet.delete(_watcher);
+      _watcher.run()
     }
 
     resetSchedulerState();
   }
 
-  return function (effectfn: EffectFnc, context?: any, ...params: any[]) {
-    if (fnSet.has(effectfn)) {
+  return function (watcher: Watcher) {
+    if (watcherSet.has(watcher)) {
       return;
     }
-    fnSet.add(effectfn);
-
-    const queueItem = {
-      func: effectfn,
-      context,
-      args: params,
-    };
+    watcherSet.add(watcher);
 
     if (flushing) {
       // 在刷新的时候，直接加 后面
-      queue.splice(index + 1, 0, queueItem);
+      queue.splice(index + 1, 0, watcher);
     } else {
-      queue.push(queueItem);
+      queue.push(watcher);
     }
 
     if (!waiting) {
